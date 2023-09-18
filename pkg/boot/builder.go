@@ -70,8 +70,8 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			os.Exit(1)
 		},
 		DatasourceContext: func(appCtx *ApplicationContext) feather_sql_datasource.DatasourceContext {
-			return feather_sql_datasource.NewDefaultDatasourceContext(appCtx.DatabaseConfig.Driver, appCtx.DatabaseConfig.ParamHolder, appCtx.DatabaseConfig.DatasourceUrl,
-				appCtx.DatabaseConfig.DatasourceUsername, appCtx.DatabaseConfig.DatasourcePassword, appCtx.DatabaseConfig.DatasourceServer, appCtx.DatabaseConfig.DatasourceService)
+			return feather_sql_datasource.NewDefaultDatasourceContext(appCtx.DatabaseConfig.Driver, appCtx.DatabaseConfig.ParamHolder, *appCtx.DatabaseConfig.DatasourceUrl,
+				*appCtx.DatabaseConfig.DatasourceUsername, *appCtx.DatabaseConfig.DatasourcePassword, *appCtx.DatabaseConfig.DatasourceServer, *appCtx.DatabaseConfig.DatasourceService)
 		},
 		Datasource: func(appCtx *ApplicationContext) feather_sql_datasource.Datasource {
 			return feather_sql_datasource.NewDefaultDatasource(appCtx.DatasourceContext, sql.Open)
@@ -92,7 +92,7 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			return feather_security.NewInMemoryPrincipalManager(appCtx.PasswordManager)
 		},
 		TokenManager: func(appCtx *ApplicationContext) feather_security.TokenManager {
-			return feather_security.NewJwtTokenManager([]byte(appCtx.SecurityConfig.TokenSignatureKey), feather_security.WithIssuer(appCtx.AppName))
+			return feather_security.NewJwtTokenManager([]byte(*appCtx.SecurityConfig.TokenSignatureKey), feather_security.WithIssuer(appCtx.AppName))
 		},
 		AuthenticationService: func(appCtx *ApplicationContext) feather_security.AuthenticationService {
 			return feather_security.NewDefaultAuthenticationService(appCtx.PasswordManager, appCtx.PrincipalManager, appCtx.TokenManager)

@@ -27,17 +27,17 @@ type GrpcConfig struct {
 }
 
 type SecurityConfig struct {
-	TokenSignatureKey string
+	TokenSignatureKey *string
 }
 
 type DatabaseConfig struct {
 	ParamHolder        feather_sql.ParamHolder
 	Driver             feather_sql.DriverName
-	DatasourceUrl      string
-	DatasourceUsername string
-	DatasourcePassword string
-	DatasourceServer   string
-	DatasourceService  string
+	DatasourceUrl      *string
+	DatasourceUsername *string
+	DatasourcePassword *string
+	DatasourceServer   *string
+	DatasourceService  *string
 }
 
 type ApplicationContext struct {
