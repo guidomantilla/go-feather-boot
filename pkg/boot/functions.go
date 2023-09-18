@@ -14,7 +14,9 @@ import (
 	"github.com/qmdx00/lifecycle"
 )
 
-func Init(appName string, version string, args []string, builder *BeanBuilder, fn func(ctx ApplicationContext)) error {
+type InitDelegateFunc func(ctx ApplicationContext) error
+
+func Init(appName string, version string, args []string, builder *BeanBuilder, fn InitDelegateFunc) error {
 
 	if appName == "" {
 		slog.Error("starting up - error setting up the application: appName is empty")
@@ -52,9 +54,14 @@ func Init(appName string, version string, args []string, builder *BeanBuilder, f
 	ctx.PublicRouter.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, feather_web_rest.NotFoundException("resource not found"))
 	})
-	ctx.PrivateRouter = ctx.PublicRouter.Group("/api", ctx.AuthorizationFilter.Authorize)
+	ctx.PrivateRouter.GET("/info", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{"appName": appName})
+	})
 
-	fn(*ctx)
+	if err := fn(*ctx); err != nil {
+		slog.Error("starting up - error setting up the application.", "message", err.Error())
+		os.Exit(1)
+	}
 
 	httpServer := &http.Server{
 		Addr:              net.JoinHostPort(*ctx.HttpConfig.Host, *ctx.HttpConfig.Port),

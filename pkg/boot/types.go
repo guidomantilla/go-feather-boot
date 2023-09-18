@@ -27,7 +27,11 @@ type GrpcConfig struct {
 }
 
 type SecurityConfig struct {
-	TokenSignatureKey *string
+	TokenSignatureKey       *string
+	PasswordMinSpecialChars *string
+	PasswordMinNumber       *string
+	PasswordMinUpperCase    *string
+	PasswordLength          *string
 }
 
 type DatabaseConfig struct {
@@ -106,6 +110,7 @@ func NewApplicationContext(appName string, args []string, builder *BeanBuilder) 
 	ctx.AuthenticationEndpoint, ctx.AuthorizationFilter = builder.AuthenticationEndpoint(ctx), builder.AuthorizationFilter(ctx)
 
 	ctx.PublicRouter = gin.Default()
+	ctx.PrivateRouter = ctx.PublicRouter.Group("/api", ctx.AuthorizationFilter.Authorize)
 
 	return ctx
 }
