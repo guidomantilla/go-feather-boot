@@ -60,8 +60,8 @@ type ApplicationContext struct {
 	AuthenticationEndpoint feather_security.AuthenticationEndpoint
 	AuthorizationService   feather_security.AuthorizationService
 	AuthorizationFilter    feather_security.AuthorizationFilter
-	Router                 *gin.Engine
-	SecureRouter           *gin.RouterGroup
+	PublicRouter           *gin.Engine
+	PrivateRouter          *gin.RouterGroup
 }
 
 func NewApplicationContext(appName string, args []string, builder *BeanBuilder) *ApplicationContext {
@@ -105,7 +105,7 @@ func NewApplicationContext(appName string, args []string, builder *BeanBuilder) 
 	ctx.AuthenticationService, ctx.AuthorizationService = builder.AuthenticationService(ctx), builder.AuthorizationService(ctx)
 	ctx.AuthenticationEndpoint, ctx.AuthorizationFilter = builder.AuthenticationEndpoint(ctx), builder.AuthorizationFilter(ctx)
 
-	ctx.Router = gin.Default()
+	ctx.PublicRouter = gin.Default()
 
 	return ctx
 }

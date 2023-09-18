@@ -45,20 +45,20 @@ func Init(appName string, version string, args []string, builder *BeanBuilder, f
 	ctx := NewApplicationContext(strings.Join([]string{appName, version}, " - "), args, builder)
 	defer ctx.Stop()
 
-	ctx.Router.POST("/login", ctx.AuthenticationEndpoint.Authenticate)
-	ctx.Router.GET("/health", func(ctx *gin.Context) {
+	ctx.PublicRouter.POST("/login", ctx.AuthenticationEndpoint.Authenticate)
+	ctx.PublicRouter.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"status": "alive"})
 	})
-	ctx.Router.NoRoute(func(c *gin.Context) {
+	ctx.PublicRouter.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, feather_web_rest.NotFoundException("resource not found"))
 	})
-	ctx.SecureRouter = ctx.Router.Group("/api", ctx.AuthorizationFilter.Authorize)
+	ctx.PrivateRouter = ctx.PublicRouter.Group("/api", ctx.AuthorizationFilter.Authorize)
 
 	fn(*ctx)
 
 	httpServer := &http.Server{
 		Addr:              net.JoinHostPort(*ctx.HttpConfig.Host, *ctx.HttpConfig.Port),
-		Handler:           ctx.Router,
+		Handler:           ctx.PublicRouter,
 		ReadHeaderTimeout: 60000,
 	}
 
