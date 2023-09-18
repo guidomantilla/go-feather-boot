@@ -2,6 +2,7 @@ package boot
 
 import (
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -56,7 +57,7 @@ func Init(appName string, version string, args []string, builder *BeanBuilder, f
 	fn(*ctx)
 
 	httpServer := &http.Server{
-		Addr:              ctx.HostPort,
+		Addr:              net.JoinHostPort(*ctx.HttpConfig.Host, *ctx.HttpConfig.Port),
 		Handler:           ctx.Router,
 		ReadHeaderTimeout: 60000,
 	}

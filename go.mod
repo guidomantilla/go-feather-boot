@@ -5,7 +5,7 @@ go 1.21.1
 require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang/mock v1.6.0
-	github.com/guidomantilla/go-feather-commons v0.5.1
+	github.com/guidomantilla/go-feather-commons v0.5.2
 	github.com/guidomantilla/go-feather-security v0.5.1
 	github.com/guidomantilla/go-feather-sql v0.5.1
 	github.com/guidomantilla/go-feather-web v0.5.1

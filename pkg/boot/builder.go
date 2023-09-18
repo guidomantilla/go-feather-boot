@@ -3,12 +3,13 @@ package boot
 import (
 	"context"
 	"database/sql"
+	"log/slog"
+	"os"
+
 	feather_commons_environment "github.com/guidomantilla/go-feather-commons/pkg/environment"
 	feather_security "github.com/guidomantilla/go-feather-security/pkg/security"
 	feather_sql_datasource "github.com/guidomantilla/go-feather-sql/pkg/datasource"
 	feather_sql_transaction "github.com/guidomantilla/go-feather-sql/pkg/transaction"
-	"log/slog"
-	"os"
 )
 
 type EnvironmentBuilderFunc func(appCtx *ApplicationContext) feather_commons_environment.Environment
@@ -40,8 +41,8 @@ type AuthenticationEndpointBuilderFunc func(appCtx *ApplicationContext) feather_
 type AuthorizationFilterBuilderFunc func(appCtx *ApplicationContext) feather_security.AuthorizationFilter
 
 type BeanBuilder struct {
-	Environment            EnvironmentBuilderFunc
 	Config                 ConfigLoaderFunc
+	Environment            EnvironmentBuilderFunc
 	DatasourceContext      DatasourceContextBuilderFunc
 	Datasource             DatasourceBuilderFunc
 	TransactionHandler     TransactionHandlerBuilderFunc
@@ -65,12 +66,12 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			return feather_commons_environment.NewDefaultEnvironment(feather_commons_environment.WithArrays(&osArgs, &appCtx.CmdArgs))
 		},
 		Config: func(appCtx *ApplicationContext) {
-			slog.Error("starting up - error setting up configuration.", "message", "Config function not implemented")
+			slog.Error("starting up - error setting up configuration.", "message", "config function not implemented")
 			os.Exit(1)
 		},
 		DatasourceContext: func(appCtx *ApplicationContext) feather_sql_datasource.DatasourceContext {
-			return feather_sql_datasource.NewDefaultDatasourceContext(appCtx.Driver, appCtx.ParamHolder, appCtx.DatasourceUrl,
-				appCtx.DatasourceUsername, appCtx.DatasourcePassword, appCtx.DatasourceServer, appCtx.DatasourceService)
+			return feather_sql_datasource.NewDefaultDatasourceContext(appCtx.DatabaseConfig.Driver, appCtx.DatabaseConfig.ParamHolder, appCtx.DatabaseConfig.DatasourceUrl,
+				appCtx.DatabaseConfig.DatasourceUsername, appCtx.DatabaseConfig.DatasourcePassword, appCtx.DatabaseConfig.DatasourceServer, appCtx.DatabaseConfig.DatasourceService)
 		},
 		Datasource: func(appCtx *ApplicationContext) feather_sql_datasource.Datasource {
 			return feather_sql_datasource.NewDefaultDatasource(appCtx.DatasourceContext, sql.Open)
@@ -91,7 +92,7 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			return feather_security.NewInMemoryPrincipalManager(appCtx.PasswordManager)
 		},
 		TokenManager: func(appCtx *ApplicationContext) feather_security.TokenManager {
-			return feather_security.NewJwtTokenManager([]byte(appCtx.TokenSignatureKey), feather_security.WithIssuer(appCtx.AppName))
+			return feather_security.NewJwtTokenManager([]byte(appCtx.SecurityConfig.TokenSignatureKey), feather_security.WithIssuer(appCtx.AppName))
 		},
 		AuthenticationService: func(appCtx *ApplicationContext) feather_security.AuthenticationService {
 			return feather_security.NewDefaultAuthenticationService(appCtx.PasswordManager, appCtx.PrincipalManager, appCtx.TokenManager)

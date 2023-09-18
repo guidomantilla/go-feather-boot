@@ -14,18 +14,39 @@ import (
 	feather_sql_transaction "github.com/guidomantilla/go-feather-sql/pkg/transaction"
 )
 
+type HttpConfig struct {
+	Host            *string
+	Port            *string
+	SwaggerPort     *string
+	CorsAllowOrigin *string
+}
+
+type GrpcConfig struct {
+	Host *string
+	Port *string
+}
+
+type SecurityConfig struct {
+	TokenSignatureKey string
+}
+
+type DatabaseConfig struct {
+	ParamHolder        feather_sql.ParamHolder
+	Driver             feather_sql.DriverName
+	DatasourceUrl      string
+	DatasourceUsername string
+	DatasourcePassword string
+	DatasourceServer   string
+	DatasourceService  string
+}
+
 type ApplicationContext struct {
 	AppName                string
-	HostPort               string
-	TokenSignatureKey      string
-	ParamHolder            feather_sql.ParamHolder
-	Driver                 feather_sql.DriverName
-	DatasourceUrl          string
-	DatasourceUsername     string
-	DatasourcePassword     string
-	DatasourceServer       string
-	DatasourceService      string
 	CmdArgs                []string
+	HttpConfig             *HttpConfig
+	GrpcConfig             *GrpcConfig
+	SecurityConfig         *SecurityConfig
+	DatabaseConfig         *DatabaseConfig
 	Environment            feather_commons_environment.Environment
 	DatasourceContext      feather_sql_datasource.DatasourceContext
 	Datasource             feather_sql_datasource.Datasource
