@@ -4,12 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
+	"net/http"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	feather_commons_environment "github.com/guidomantilla/go-feather-commons/pkg/environment"
 	feather_security "github.com/guidomantilla/go-feather-security/pkg/security"
 	feather_sql_datasource "github.com/guidomantilla/go-feather-sql/pkg/datasource"
 	feather_sql_transaction "github.com/guidomantilla/go-feather-sql/pkg/transaction"
+	feather_web_rest "github.com/guidomantilla/go-feather-web/pkg/rest"
+	"google.golang.org/grpc"
 )
 
 type EnvironmentBuilderFunc func(appCtx *ApplicationContext) feather_commons_environment.Environment
@@ -40,6 +44,10 @@ type AuthenticationEndpointBuilderFunc func(appCtx *ApplicationContext) feather_
 
 type AuthorizationFilterBuilderFunc func(appCtx *ApplicationContext) feather_security.AuthorizationFilter
 
+type HttpServerBuilderFunc func(appCtx *ApplicationContext) (*gin.Engine, *gin.RouterGroup)
+
+type GrpcServerBuilderFunc func(appCtx *ApplicationContext) (*grpc.ServiceDesc, any)
+
 type BeanBuilder struct {
 	Config                 ConfigLoaderFunc
 	Environment            EnvironmentBuilderFunc
@@ -55,6 +63,8 @@ type BeanBuilder struct {
 	AuthorizationService   AuthorizationServiceBuilderFunc
 	AuthenticationEndpoint AuthenticationEndpointBuilderFunc
 	AuthorizationFilter    AuthorizationFilterBuilderFunc
+	HttpServer             HttpServerBuilderFunc
+	GrpcServer             GrpcServerBuilderFunc
 }
 
 func NewBeanBuilder(ctx context.Context) *BeanBuilder {
@@ -105,6 +115,23 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 		},
 		AuthorizationFilter: func(appCtx *ApplicationContext) feather_security.AuthorizationFilter {
 			return feather_security.NewDefaultAuthorizationFilter(appCtx.AuthorizationService)
+		},
+		HttpServer: func(appCtx *ApplicationContext) (*gin.Engine, *gin.RouterGroup) {
+			engine := gin.Default()
+			engine.POST("/login", appCtx.AuthenticationEndpoint.Authenticate)
+			engine.GET("/health", func(ctx *gin.Context) {
+				ctx.JSON(http.StatusOK, gin.H{"status": "alive"})
+			})
+			engine.NoRoute(func(c *gin.Context) {
+				c.JSON(http.StatusNotFound, feather_web_rest.NotFoundException("resource not found"))
+			})
+			engine.GET("/info", func(ctx *gin.Context) {
+				ctx.JSON(http.StatusOK, gin.H{"appName": appCtx.AppName})
+			})
+			return engine, engine.Group("/api", appCtx.AuthorizationFilter.Authorize)
+		},
+		GrpcServer: func(appCtx *ApplicationContext) (*grpc.ServiceDesc, any) {
+			return nil, nil
 		},
 	}
 }

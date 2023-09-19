@@ -8,10 +8,10 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/gin-gonic/gin"
-	feather_web_rest "github.com/guidomantilla/go-feather-web/pkg/rest"
 	feather_web_server "github.com/guidomantilla/go-feather-web/pkg/server"
 	"github.com/qmdx00/lifecycle"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 type InitDelegateFunc func(ctx ApplicationContext) error
@@ -47,17 +47,6 @@ func Init(appName string, version string, args []string, builder *BeanBuilder, f
 	ctx := NewApplicationContext(strings.Join([]string{appName, version}, " - "), args, builder)
 	defer ctx.Stop()
 
-	ctx.PublicRouter.POST("/login", ctx.AuthenticationEndpoint.Authenticate)
-	ctx.PublicRouter.GET("/health", func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, gin.H{"status": "alive"})
-	})
-	ctx.PublicRouter.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, feather_web_rest.NotFoundException("resource not found"))
-	})
-	ctx.PrivateRouter.GET("/info", func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, gin.H{"appName": appName})
-	})
-
 	if err := fn(*ctx); err != nil {
 		slog.Error("starting up - error setting up the application.", "message", err.Error())
 		os.Exit(1)
@@ -69,6 +58,14 @@ func Init(appName string, version string, args []string, builder *BeanBuilder, f
 		ReadHeaderTimeout: 60000,
 	}
 
-	app.Attach("GinServer", feather_web_server.BuildHttpServer(httpServer))
+	app.Attach("HttpServer", feather_web_server.BuildHttpServer(httpServer))
+
+	if ctx.GrpcConfig != nil {
+		server := grpc.NewServer()
+		server.RegisterService(ctx.GrpcServiceDesc, ctx.GrpcServiceServer)
+		reflection.Register(server)
+		app.Attach("GrpcServer", feather_web_server.BuildGrpcServer(net.JoinHostPort(*ctx.GrpcConfig.Host, *ctx.GrpcConfig.Port), server))
+	}
+
 	return app.Run()
 }

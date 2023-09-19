@@ -12,6 +12,7 @@ import (
 	feather_sql_datasource "github.com/guidomantilla/go-feather-sql/pkg/datasource"
 	feather_sql "github.com/guidomantilla/go-feather-sql/pkg/sql"
 	feather_sql_transaction "github.com/guidomantilla/go-feather-sql/pkg/transaction"
+	"google.golang.org/grpc"
 )
 
 type HttpConfig struct {
@@ -66,6 +67,8 @@ type ApplicationContext struct {
 	AuthorizationFilter    feather_security.AuthorizationFilter
 	PublicRouter           *gin.Engine
 	PrivateRouter          *gin.RouterGroup
+	GrpcServiceDesc        *grpc.ServiceDesc
+	GrpcServiceServer      any
 }
 
 func NewApplicationContext(appName string, args []string, builder *BeanBuilder) *ApplicationContext {
@@ -109,8 +112,11 @@ func NewApplicationContext(appName string, args []string, builder *BeanBuilder) 
 	ctx.AuthenticationService, ctx.AuthorizationService = builder.AuthenticationService(ctx), builder.AuthorizationService(ctx)
 	ctx.AuthenticationEndpoint, ctx.AuthorizationFilter = builder.AuthenticationEndpoint(ctx), builder.AuthorizationFilter(ctx)
 
-	ctx.PublicRouter = gin.Default()
-	ctx.PrivateRouter = ctx.PublicRouter.Group("/api", ctx.AuthorizationFilter.Authorize)
+	slog.Info("starting up - setting up http server")
+	ctx.PublicRouter, ctx.PrivateRouter = builder.HttpServer(ctx)
+
+	slog.Info("starting up - setting up grpc server")
+	ctx.GrpcServiceDesc, ctx.GrpcServiceServer = builder.GrpcServer(ctx)
 
 	return ctx
 }
