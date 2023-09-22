@@ -11,7 +11,6 @@ import (
 	feather_security "github.com/guidomantilla/go-feather-security/pkg/security"
 	feather_sql_datasource "github.com/guidomantilla/go-feather-sql/pkg/datasource"
 	feather_sql "github.com/guidomantilla/go-feather-sql/pkg/sql"
-	feather_sql_transaction "github.com/guidomantilla/go-feather-sql/pkg/transaction"
 	"google.golang.org/grpc"
 )
 
@@ -55,7 +54,7 @@ type ApplicationContext struct {
 	Environment            feather_commons_environment.Environment
 	DatasourceContext      feather_sql_datasource.DatasourceContext
 	Datasource             feather_sql_datasource.Datasource
-	TransactionHandler     feather_sql_transaction.TransactionHandler
+	TransactionHandler     feather_sql_datasource.TransactionHandler
 	PasswordEncoder        feather_security.PasswordEncoder
 	PasswordGenerator      feather_security.PasswordGenerator
 	PasswordManager        feather_security.PasswordManager

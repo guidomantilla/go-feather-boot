@@ -11,7 +11,6 @@ import (
 	feather_commons_environment "github.com/guidomantilla/go-feather-commons/pkg/environment"
 	feather_security "github.com/guidomantilla/go-feather-security/pkg/security"
 	feather_sql_datasource "github.com/guidomantilla/go-feather-sql/pkg/datasource"
-	feather_sql_transaction "github.com/guidomantilla/go-feather-sql/pkg/transaction"
 	feather_web_rest "github.com/guidomantilla/go-feather-web/pkg/rest"
 	"google.golang.org/grpc"
 )
@@ -24,7 +23,7 @@ type DatasourceContextBuilderFunc func(appCtx *ApplicationContext) feather_sql_d
 
 type DatasourceBuilderFunc func(appCtx *ApplicationContext) feather_sql_datasource.Datasource
 
-type TransactionHandlerBuilderFunc func(appCtx *ApplicationContext) feather_sql_transaction.TransactionHandler
+type TransactionHandlerBuilderFunc func(appCtx *ApplicationContext) feather_sql_datasource.TransactionHandler
 
 type PasswordGeneratorBuilderFunc func(appCtx *ApplicationContext) feather_security.PasswordGenerator
 
@@ -86,8 +85,8 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 		Datasource: func(appCtx *ApplicationContext) feather_sql_datasource.Datasource {
 			return feather_sql_datasource.NewDefaultDatasource(appCtx.DatasourceContext, sql.Open)
 		},
-		TransactionHandler: func(appCtx *ApplicationContext) feather_sql_transaction.TransactionHandler {
-			return feather_sql_transaction.NewTransactionHandler(appCtx.Datasource)
+		TransactionHandler: func(appCtx *ApplicationContext) feather_sql_datasource.TransactionHandler {
+			return feather_sql_datasource.NewTransactionHandler(appCtx.Datasource)
 		},
 		PasswordEncoder: func(appCtx *ApplicationContext) feather_security.PasswordEncoder {
 			return feather_security.NewBcryptPasswordEncoder()
