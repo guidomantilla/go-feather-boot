@@ -9,9 +9,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	feather_commons_environment "github.com/guidomantilla/go-feather-commons/pkg/environment"
+	feather_commons_log "github.com/guidomantilla/go-feather-commons/pkg/log"
 	feather_security "github.com/guidomantilla/go-feather-security/pkg/security"
 	feather_sql_datasource "github.com/guidomantilla/go-feather-sql/pkg/datasource"
 	feather_web_rest "github.com/guidomantilla/go-feather-web/pkg/rest"
+	sloggin "github.com/samber/slog-gin"
 	"google.golang.org/grpc"
 )
 
@@ -48,8 +50,8 @@ type HttpServerBuilderFunc func(appCtx *ApplicationContext) (*gin.Engine, *gin.R
 type GrpcServerBuilderFunc func(appCtx *ApplicationContext) (*grpc.ServiceDesc, any)
 
 type BeanBuilder struct {
-	Config                 ConfigLoaderFunc
 	Environment            EnvironmentBuilderFunc
+	Config                 ConfigLoaderFunc
 	DatasourceContext      DatasourceContextBuilderFunc
 	Datasource             DatasourceBuilderFunc
 	TransactionHandler     TransactionHandlerBuilderFunc
@@ -68,6 +70,10 @@ type BeanBuilder struct {
 
 func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 
+	if ctx == nil {
+		feather_commons_log.Fatal("starting up - error setting up builder.", "message", "context is nil")
+	}
+
 	return &BeanBuilder{
 
 		Environment: func(appCtx *ApplicationContext) feather_commons_environment.Environment {
@@ -75,8 +81,7 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			return feather_commons_environment.NewDefaultEnvironment(feather_commons_environment.WithArrays(&osArgs, &appCtx.CmdArgs))
 		},
 		Config: func(appCtx *ApplicationContext) {
-			slog.Error("starting up - error setting up configuration.", "message", "config function not implemented")
-			os.Exit(1)
+			feather_commons_log.Fatal("starting up - error setting up configuration.", "message", "config function not implemented")
 		},
 		DatasourceContext: func(appCtx *ApplicationContext) feather_sql_datasource.DatasourceContext {
 			return feather_sql_datasource.NewDefaultDatasourceContext(appCtx.DatabaseConfig.Driver, appCtx.DatabaseConfig.ParamHolder, *appCtx.DatabaseConfig.DatasourceUrl,
@@ -116,7 +121,10 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			return feather_security.NewDefaultAuthorizationFilter(appCtx.AuthorizationService)
 		},
 		HttpServer: func(appCtx *ApplicationContext) (*gin.Engine, *gin.RouterGroup) {
+
+			logger := appCtx.Logger.RetrieveLogger().(*slog.Logger)
 			engine := gin.Default()
+			engine.Use(sloggin.New(logger.WithGroup("http")))
 			engine.POST("/login", appCtx.AuthenticationEndpoint.Authenticate)
 			engine.GET("/health", func(ctx *gin.Context) {
 				ctx.JSON(http.StatusOK, gin.H{"status": "alive"})

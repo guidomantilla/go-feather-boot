@@ -3,11 +3,10 @@ package boot
 import (
 	"database/sql"
 	"fmt"
-	"log/slog"
-	"os"
 
 	"github.com/gin-gonic/gin"
 	feather_commons_environment "github.com/guidomantilla/go-feather-commons/pkg/environment"
+	feather_commons_log "github.com/guidomantilla/go-feather-commons/pkg/log"
 	feather_security "github.com/guidomantilla/go-feather-security/pkg/security"
 	feather_sql_datasource "github.com/guidomantilla/go-feather-sql/pkg/datasource"
 	feather_sql "github.com/guidomantilla/go-feather-sql/pkg/sql"
@@ -46,11 +45,13 @@ type DatabaseConfig struct {
 
 type ApplicationContext struct {
 	AppName                string
+	LogLevel               string
 	CmdArgs                []string
 	HttpConfig             *HttpConfig
 	GrpcConfig             *GrpcConfig
 	SecurityConfig         *SecurityConfig
 	DatabaseConfig         *DatabaseConfig
+	Logger                 feather_commons_log.Logger
 	Environment            feather_commons_environment.Environment
 	DatasourceContext      feather_sql_datasource.DatasourceContext
 	Datasource             feather_sql_datasource.Datasource
@@ -70,52 +71,53 @@ type ApplicationContext struct {
 	GrpcServiceServer      any
 }
 
-func NewApplicationContext(appName string, args []string, builder *BeanBuilder) *ApplicationContext {
+func NewApplicationContext(appName string, args []string, logger feather_commons_log.Logger, builder *BeanBuilder) *ApplicationContext {
 
 	if appName == "" {
-		slog.Error("starting up - error setting up the ApplicationContext: appName is empty")
-		os.Exit(1)
+		feather_commons_log.Fatal("starting up - error setting up the ApplicationContext: appName is empty")
 	}
 
-	slog.Info(fmt.Sprintf("starting up - starting up ApplicationContext %s", appName))
+	feather_commons_log.Info(fmt.Sprintf("starting up - starting up ApplicationContext %s", appName))
 
 	if args == nil {
-		slog.Error("starting up - error setting up the ApplicationContext: args is nil")
-		os.Exit(1)
+		feather_commons_log.Fatal("starting up - error setting up the ApplicationContext: args is nil")
 	}
 
-	if builder == nil {
-		slog.Error("starting up - error setting up the ApplicationContext: builder is nil")
-		os.Exit(1)
+	if logger == nil {
+		feather_commons_log.Fatal("starting up - error setting up the application: logger is nil")
+	}
+
+	if builder == nil { //nolint:staticcheck
+		feather_commons_log.Fatal("starting up - error setting up the ApplicationContext: builder is nil")
 	}
 
 	ctx := &ApplicationContext{}
-	ctx.AppName, ctx.CmdArgs = appName, args
+	ctx.AppName, ctx.CmdArgs, ctx.Logger = appName, args, logger
 
-	slog.Info("starting up - setting up environment variables")
-	ctx.Environment = builder.Environment(ctx)
+	feather_commons_log.Info("starting up - setting up environment variables")
+	ctx.Environment = builder.Environment(ctx) //nolint:staticcheck
 
-	slog.Info("starting up - setting up configuration")
-	builder.Config(ctx)
+	feather_commons_log.Info("starting up - setting up configuration")
+	builder.Config(ctx) //nolint:staticcheck
 
-	slog.Info("starting up - setting up DB connection")
-	ctx.DatasourceContext = builder.DatasourceContext(ctx)
-	ctx.Datasource = builder.Datasource(ctx)
-	ctx.TransactionHandler = builder.TransactionHandler(ctx)
+	feather_commons_log.Info("starting up - setting up DB connection")
+	ctx.DatasourceContext = builder.DatasourceContext(ctx)   //nolint:staticcheck
+	ctx.Datasource = builder.Datasource(ctx)                 //nolint:staticcheck
+	ctx.TransactionHandler = builder.TransactionHandler(ctx) //nolint:staticcheck
 
-	slog.Info("starting up - setting up security")
-	ctx.PasswordEncoder = builder.PasswordEncoder(ctx)
-	ctx.PasswordGenerator = builder.PasswordGenerator(ctx)
-	ctx.PasswordManager = builder.PasswordManager(ctx)
-	ctx.PrincipalManager, ctx.TokenManager = builder.PrincipalManager(ctx), builder.TokenManager(ctx)
-	ctx.AuthenticationService, ctx.AuthorizationService = builder.AuthenticationService(ctx), builder.AuthorizationService(ctx)
-	ctx.AuthenticationEndpoint, ctx.AuthorizationFilter = builder.AuthenticationEndpoint(ctx), builder.AuthorizationFilter(ctx)
+	feather_commons_log.Info("starting up - setting up security")
+	ctx.PasswordEncoder = builder.PasswordEncoder(ctx)                                                                          //nolint:staticcheck
+	ctx.PasswordGenerator = builder.PasswordGenerator(ctx)                                                                      //nolint:staticcheck
+	ctx.PasswordManager = builder.PasswordManager(ctx)                                                                          //nolint:staticcheck
+	ctx.PrincipalManager, ctx.TokenManager = builder.PrincipalManager(ctx), builder.TokenManager(ctx)                           //nolint:staticcheck
+	ctx.AuthenticationService, ctx.AuthorizationService = builder.AuthenticationService(ctx), builder.AuthorizationService(ctx) //nolint:staticcheck
+	ctx.AuthenticationEndpoint, ctx.AuthorizationFilter = builder.AuthenticationEndpoint(ctx), builder.AuthorizationFilter(ctx) //nolint:staticcheck
 
-	slog.Info("starting up - setting up http server")
-	ctx.PublicRouter, ctx.PrivateRouter = builder.HttpServer(ctx)
+	feather_commons_log.Info("starting up - setting up http server")
+	ctx.PublicRouter, ctx.PrivateRouter = builder.HttpServer(ctx) //nolint:staticcheck
 
-	slog.Info("starting up - setting up grpc server")
-	ctx.GrpcServiceDesc, ctx.GrpcServiceServer = builder.GrpcServer(ctx)
+	feather_commons_log.Info("starting up - setting up grpc server")
+	ctx.GrpcServiceDesc, ctx.GrpcServiceServer = builder.GrpcServer(ctx) //nolint:staticcheck
 
 	return ctx
 }
@@ -127,20 +129,20 @@ func (ctx *ApplicationContext) Stop() {
 	if ctx.Datasource != nil && ctx.DatasourceContext != nil {
 
 		var database *sql.DB
-		slog.Info("shutting down - closing up db connection")
+		feather_commons_log.Info("shutting down - closing up db connection")
 
 		if database, err = ctx.Datasource.GetDatabase(); err != nil {
-			slog.Error(fmt.Sprintf("shutting down - error db connection: %s", err.Error()))
+			feather_commons_log.Error(fmt.Sprintf("shutting down - error db connection: %s", err.Error()))
 			return
 		}
 
 		if err = database.Close(); err != nil {
-			slog.Error(fmt.Sprintf("shutting down - error closing db connection: %s", err.Error()))
+			feather_commons_log.Error(fmt.Sprintf("shutting down - error closing db connection: %s", err.Error()))
 			return
 		}
 
-		slog.Info("shutting down - db connection closed")
+		feather_commons_log.Info("shutting down - db connection closed")
 	}
 
-	slog.Info(fmt.Sprintf("shutting down - ApplicationContext closed %s", ctx.AppName))
+	feather_commons_log.Info(fmt.Sprintf("shutting down - ApplicationContext closed %s", ctx.AppName))
 }

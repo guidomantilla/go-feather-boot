@@ -1,13 +1,12 @@
 package boot
 
 import (
-	"log/slog"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"syscall"
 
+	feather_commons_log "github.com/guidomantilla/go-feather-commons/pkg/log"
 	feather_web_server "github.com/guidomantilla/go-feather-web/pkg/server"
 	"github.com/qmdx00/lifecycle"
 	"google.golang.org/grpc"
@@ -16,26 +15,26 @@ import (
 
 type InitDelegateFunc func(ctx ApplicationContext) error
 
-func Init(appName string, version string, args []string, builder *BeanBuilder, fn InitDelegateFunc) error {
+func Init(appName string, version string, args []string, logger feather_commons_log.Logger, builder *BeanBuilder, fn InitDelegateFunc) error {
 
 	if appName == "" {
-		slog.Error("starting up - error setting up the application: appName is empty")
-		os.Exit(1)
+		feather_commons_log.Fatal("starting up - error setting up the application: appName is empty")
 	}
 
 	if args == nil {
-		slog.Error("starting up - error setting up the application: args is nil")
-		os.Exit(1)
+		feather_commons_log.Fatal("starting up - error setting up the application: args is nil")
+	}
+
+	if logger == nil {
+		feather_commons_log.Fatal("starting up - error setting up the application: logger is nil")
 	}
 
 	if builder == nil {
-		slog.Error("starting up - error setting up the application: builder is nil")
-		os.Exit(1)
+		feather_commons_log.Fatal("starting up - error setting up the application: builder is nil")
 	}
 
 	if fn == nil {
-		slog.Error("starting up - error setting up the application: fn is nil")
-		os.Exit(1)
+		feather_commons_log.Fatal("starting up - error setting up the application: fn is nil")
 	}
 
 	app := lifecycle.NewApp(
@@ -44,12 +43,11 @@ func Init(appName string, version string, args []string, builder *BeanBuilder, f
 		lifecycle.WithSignal(syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGKILL),
 	)
 
-	ctx := NewApplicationContext(strings.Join([]string{appName, version}, " - "), args, builder)
+	ctx := NewApplicationContext(strings.Join([]string{appName, version}, " - "), args, logger, builder)
 	defer ctx.Stop()
 
 	if err := fn(*ctx); err != nil {
-		slog.Error("starting up - error setting up the application.", "message", err.Error())
-		os.Exit(1)
+		feather_commons_log.Fatal("starting up - error setting up the application.", "message", err.Error())
 	}
 
 	httpServer := &http.Server{
