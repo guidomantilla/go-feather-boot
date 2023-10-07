@@ -78,7 +78,7 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 
 		Environment: func(appCtx *ApplicationContext) feather_commons_environment.Environment {
 			osArgs := os.Environ()
-			return feather_commons_environment.NewDefaultEnvironment(feather_commons_environment.WithArrays(&osArgs, &appCtx.CmdArgs))
+			return feather_commons_environment.NewDefaultEnvironment(feather_commons_environment.WithArrays(osArgs, appCtx.CmdArgs))
 		},
 		Config: func(appCtx *ApplicationContext) {
 			feather_commons_log.Fatal("starting up - error setting up configuration.", "message", "config function not implemented")
