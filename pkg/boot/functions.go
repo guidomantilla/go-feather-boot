@@ -3,7 +3,6 @@ package boot
 import (
 	"net"
 	"net/http"
-	"strings"
 	"syscall"
 
 	feather_commons_log "github.com/guidomantilla/go-feather-commons/pkg/log"
@@ -43,7 +42,7 @@ func Init(appName string, version string, args []string, logger feather_commons_
 		lifecycle.WithSignal(syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGKILL),
 	)
 
-	ctx := NewApplicationContext(strings.Join([]string{appName, version}, " - "), args, logger, builder)
+	ctx := NewApplicationContext(appName, version, args, logger, builder)
 	defer ctx.Stop()
 
 	if err := fn(*ctx); err != nil {

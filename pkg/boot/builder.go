@@ -122,9 +122,15 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 		},
 		HttpServer: func(appCtx *ApplicationContext) (*gin.Engine, *gin.RouterGroup) {
 
-			logger := appCtx.Logger.RetrieveLogger().(*slog.Logger)
-			engine := gin.Default()
-			engine.Use(sloggin.New(logger.WithGroup("http")))
+			loggerFilter := sloggin.New(appCtx.Logger.RetrieveLogger().(*slog.Logger).WithGroup("http"))
+			recoveryFilter := gin.Recovery()
+			applicationNameFilter := func(ctx *gin.Context) {
+				feather_security.AddApplicationToContext(ctx, appCtx.AppName)
+				ctx.Next()
+			}
+
+			engine := gin.New()
+			engine.Use(loggerFilter, recoveryFilter, applicationNameFilter)
 			engine.POST("/login", appCtx.AuthenticationEndpoint.Authenticate)
 			engine.GET("/health", func(ctx *gin.Context) {
 				ctx.JSON(http.StatusOK, gin.H{"status": "alive"})

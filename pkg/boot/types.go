@@ -3,6 +3,7 @@ package boot
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	feather_commons_environment "github.com/guidomantilla/go-feather-commons/pkg/environment"
@@ -45,6 +46,7 @@ type DatabaseConfig struct {
 
 type ApplicationContext struct {
 	AppName                string
+	AppVersion             string
 	LogLevel               string
 	CmdArgs                []string
 	HttpConfig             *HttpConfig
@@ -71,13 +73,17 @@ type ApplicationContext struct {
 	GrpcServiceServer      any
 }
 
-func NewApplicationContext(appName string, args []string, logger feather_commons_log.Logger, builder *BeanBuilder) *ApplicationContext {
+func NewApplicationContext(appName string, version string, args []string, logger feather_commons_log.Logger, builder *BeanBuilder) *ApplicationContext {
 
 	if appName == "" {
 		feather_commons_log.Fatal("starting up - error setting up the ApplicationContext: appName is empty")
 	}
 
-	feather_commons_log.Info(fmt.Sprintf("starting up - starting up ApplicationContext %s", appName))
+	if version == "" {
+		feather_commons_log.Fatal("starting up - error setting up the ApplicationContext: version is empty")
+	}
+
+	feather_commons_log.Info(fmt.Sprintf("starting up - starting up ApplicationContext %s", strings.Join([]string{appName, version}, " - ")))
 
 	if args == nil {
 		feather_commons_log.Fatal("starting up - error setting up the ApplicationContext: args is nil")
@@ -92,7 +98,7 @@ func NewApplicationContext(appName string, args []string, logger feather_commons
 	}
 
 	ctx := &ApplicationContext{}
-	ctx.AppName, ctx.CmdArgs, ctx.Logger = appName, args, logger
+	ctx.AppName, ctx.AppVersion, ctx.CmdArgs, ctx.Logger = appName, version, args, logger
 
 	feather_commons_log.Info("starting up - setting up environment variables")
 	ctx.Environment = builder.Environment(ctx) //nolint:staticcheck
