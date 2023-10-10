@@ -14,7 +14,7 @@ import (
 
 type InitDelegateFunc func(ctx ApplicationContext) error
 
-func Init(appName string, version string, args []string, logger feather_commons_log.Logger, builder *BeanBuilder, fn InitDelegateFunc) error {
+func Init(appName string, version string, args []string, logger feather_commons_log.Logger, enablers *Enablers, builder *BeanBuilder, fn InitDelegateFunc) error {
 
 	if appName == "" {
 		feather_commons_log.Fatal("starting up - error setting up the application: appName is empty")
@@ -26,6 +26,10 @@ func Init(appName string, version string, args []string, logger feather_commons_
 
 	if logger == nil {
 		feather_commons_log.Fatal("starting up - error setting up the application: logger is nil")
+	}
+	if enablers == nil {
+		feather_commons_log.Warn("starting up - warning setting up the application: http server, grpc server and database connectivity are disabled")
+		enablers = &Enablers{}
 	}
 
 	if builder == nil {
@@ -42,22 +46,23 @@ func Init(appName string, version string, args []string, logger feather_commons_
 		lifecycle.WithSignal(syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGKILL),
 	)
 
-	ctx := NewApplicationContext(appName, version, args, logger, builder)
+	ctx := NewApplicationContext(appName, version, args, logger, enablers, builder)
 	defer ctx.Stop()
 
 	if err := fn(*ctx); err != nil {
 		feather_commons_log.Fatal("starting up - error setting up the application.", "message", err.Error())
 	}
 
-	httpServer := &http.Server{
-		Addr:              net.JoinHostPort(*ctx.HttpConfig.Host, *ctx.HttpConfig.Port),
-		Handler:           ctx.PublicRouter,
-		ReadHeaderTimeout: 60000,
+	if ctx.Enablers.HttpServerEnabled {
+		httpServer := &http.Server{
+			Addr:              net.JoinHostPort(*ctx.HttpConfig.Host, *ctx.HttpConfig.Port),
+			Handler:           ctx.PublicRouter,
+			ReadHeaderTimeout: 60000,
+		}
+		app.Attach("HttpServer", feather_web_server.BuildHttpServer(httpServer))
 	}
 
-	app.Attach("HttpServer", feather_web_server.BuildHttpServer(httpServer))
-
-	if ctx.GrpcConfig != nil {
+	if ctx.Enablers.GrpcServerEnabled {
 		server := grpc.NewServer()
 		server.RegisterService(ctx.GrpcServiceDesc, ctx.GrpcServiceServer)
 		reflection.Register(server)

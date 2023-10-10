@@ -81,26 +81,38 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			return feather_commons_environment.NewDefaultEnvironment(feather_commons_environment.WithArrays(osArgs, appCtx.CmdArgs))
 		},
 		Config: func(appCtx *ApplicationContext) {
-			feather_commons_log.Fatal("starting up - error setting up configuration.", "message", "config function not implemented")
+			feather_commons_log.Warn("starting up - warning setting up configuration.", "message", "config function not implemented")
 		},
 		DatasourceContext: func(appCtx *ApplicationContext) feather_sql_datasource.DatasourceContext {
-			if appCtx.DatabaseConfig == nil {
-				return nil
+			if appCtx.Enablers.DatabaseEnabled {
+				if appCtx.DatabaseConfig == nil {
+					feather_commons_log.Fatal("starting up - error setting up configuration.", "message", "database config is nil")
+					return nil
+				}
+				return feather_sql_datasource.NewDefaultDatasourceContext(appCtx.DatabaseConfig.Driver, appCtx.DatabaseConfig.ParamHolder, *appCtx.DatabaseConfig.DatasourceUrl,
+					*appCtx.DatabaseConfig.DatasourceUsername, *appCtx.DatabaseConfig.DatasourcePassword, *appCtx.DatabaseConfig.DatasourceServer, *appCtx.DatabaseConfig.DatasourceService)
 			}
-			return feather_sql_datasource.NewDefaultDatasourceContext(appCtx.DatabaseConfig.Driver, appCtx.DatabaseConfig.ParamHolder, *appCtx.DatabaseConfig.DatasourceUrl,
-				*appCtx.DatabaseConfig.DatasourceUsername, *appCtx.DatabaseConfig.DatasourcePassword, *appCtx.DatabaseConfig.DatasourceServer, *appCtx.DatabaseConfig.DatasourceService)
+			return nil
 		},
 		Datasource: func(appCtx *ApplicationContext) feather_sql_datasource.Datasource {
-			if appCtx.DatabaseConfig == nil {
-				return nil
+			if appCtx.Enablers.DatabaseEnabled {
+				if appCtx.DatabaseConfig == nil {
+					feather_commons_log.Fatal("starting up - error setting up configuration.", "message", "database config is nil")
+					return nil
+				}
+				return feather_sql_datasource.NewDefaultDatasource(appCtx.DatasourceContext, sql.Open)
 			}
-			return feather_sql_datasource.NewDefaultDatasource(appCtx.DatasourceContext, sql.Open)
+			return nil
 		},
 		TransactionHandler: func(appCtx *ApplicationContext) feather_sql_datasource.TransactionHandler {
-			if appCtx.DatabaseConfig == nil {
-				return nil
+			if appCtx.Enablers.DatabaseEnabled {
+				if appCtx.DatabaseConfig == nil {
+					feather_commons_log.Fatal("starting up - error setting up configuration.", "message", "database config is nil")
+					return nil
+				}
+				return feather_sql_datasource.NewTransactionHandler(appCtx.Datasource)
 			}
-			return feather_sql_datasource.NewTransactionHandler(appCtx.Datasource)
+			return nil
 		},
 		PasswordEncoder: func(appCtx *ApplicationContext) feather_security.PasswordEncoder {
 			return feather_security.NewBcryptPasswordEncoder()
@@ -130,7 +142,6 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			return feather_security.NewDefaultAuthorizationFilter(appCtx.AuthorizationService)
 		},
 		HttpServer: func(appCtx *ApplicationContext) (*gin.Engine, *gin.RouterGroup) {
-
 			recoveryFilter := gin.Recovery()
 			loggerFilter := sloggin.New(appCtx.Logger.RetrieveLogger().(*slog.Logger).WithGroup("http"))
 			applicationNameFilter := func(ctx *gin.Context) {
@@ -153,6 +164,7 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			return engine, engine.Group("/api", appCtx.AuthorizationFilter.Authorize)
 		},
 		GrpcServer: func(appCtx *ApplicationContext) (*grpc.ServiceDesc, any) {
+			feather_commons_log.Fatal("starting up - error setting up grpc configuration.", "message", "grpc server function not implemented")
 			return nil, nil
 		},
 	}

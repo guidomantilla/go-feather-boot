@@ -8,11 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 	feather_commons_environment "github.com/guidomantilla/go-feather-commons/pkg/environment"
 	feather_commons_log "github.com/guidomantilla/go-feather-commons/pkg/log"
+	feather_commons_util "github.com/guidomantilla/go-feather-commons/pkg/util"
 	feather_security "github.com/guidomantilla/go-feather-security/pkg/security"
 	feather_sql_datasource "github.com/guidomantilla/go-feather-sql/pkg/datasource"
 	feather_sql "github.com/guidomantilla/go-feather-sql/pkg/sql"
 	"google.golang.org/grpc"
 )
+
+type Enablers struct {
+	HttpServerEnabled bool
+	GrpcServerEnabled bool
+	DatabaseEnabled   bool
+}
 
 type HttpConfig struct {
 	Host            *string
@@ -49,6 +56,7 @@ type ApplicationContext struct {
 	AppVersion             string
 	LogLevel               string
 	CmdArgs                []string
+	Enablers               *Enablers
 	HttpConfig             *HttpConfig
 	GrpcConfig             *GrpcConfig
 	SecurityConfig         *SecurityConfig
@@ -73,7 +81,7 @@ type ApplicationContext struct {
 	GrpcServiceServer      any
 }
 
-func NewApplicationContext(appName string, version string, args []string, logger feather_commons_log.Logger, builder *BeanBuilder) *ApplicationContext {
+func NewApplicationContext(appName string, version string, args []string, logger feather_commons_log.Logger, enablers *Enablers, builder *BeanBuilder) *ApplicationContext {
 
 	if appName == "" {
 		feather_commons_log.Fatal("starting up - error setting up the ApplicationContext: appName is empty")
@@ -93,12 +101,33 @@ func NewApplicationContext(appName string, version string, args []string, logger
 		feather_commons_log.Fatal("starting up - error setting up the application: logger is nil")
 	}
 
+	if enablers == nil {
+		feather_commons_log.Warn("starting up - warning setting up the application: http server, grpc server and database connectivity are disabled")
+		enablers = &Enablers{}
+	}
+
 	if builder == nil { //nolint:staticcheck
 		feather_commons_log.Fatal("starting up - error setting up the ApplicationContext: builder is nil")
 	}
 
-	ctx := &ApplicationContext{}
-	ctx.AppName, ctx.AppVersion, ctx.CmdArgs, ctx.Logger = appName, version, args, logger
+	ctx := &ApplicationContext{
+		AppName:    appName,
+		AppVersion: version,
+		CmdArgs:    args,
+		Logger:     logger,
+		Enablers:   enablers,
+		SecurityConfig: &SecurityConfig{
+			TokenSignatureKey: feather_commons_util.ValueToPtr("SecretYouShouldHide"),
+		},
+		HttpConfig: &HttpConfig{
+			Host: feather_commons_util.ValueToPtr("localhost"),
+			Port: feather_commons_util.ValueToPtr("8080"),
+		},
+		GrpcConfig: &GrpcConfig{
+			Host: feather_commons_util.ValueToPtr("localhost"),
+			Port: feather_commons_util.ValueToPtr("50051"),
+		},
+	}
 
 	feather_commons_log.Info("starting up - setting up environment variables")
 	ctx.Environment = builder.Environment(ctx) //nolint:staticcheck
@@ -106,10 +135,14 @@ func NewApplicationContext(appName string, version string, args []string, logger
 	feather_commons_log.Info("starting up - setting up configuration")
 	builder.Config(ctx) //nolint:staticcheck
 
-	feather_commons_log.Info("starting up - setting up DB connection")
-	ctx.DatasourceContext = builder.DatasourceContext(ctx)   //nolint:staticcheck
-	ctx.Datasource = builder.Datasource(ctx)                 //nolint:staticcheck
-	ctx.TransactionHandler = builder.TransactionHandler(ctx) //nolint:staticcheck
+	if ctx.Enablers.DatabaseEnabled {
+		feather_commons_log.Info("starting up - setting up DB connection")
+		ctx.DatasourceContext = builder.DatasourceContext(ctx)   //nolint:staticcheck
+		ctx.Datasource = builder.Datasource(ctx)                 //nolint:staticcheck
+		ctx.TransactionHandler = builder.TransactionHandler(ctx) //nolint:staticcheck
+	} else {
+		feather_commons_log.Warn("starting up - warning setting up database configuration. database connectivity is disabled")
+	}
 
 	feather_commons_log.Info("starting up - setting up security")
 	ctx.PasswordEncoder = builder.PasswordEncoder(ctx)                                                                          //nolint:staticcheck
@@ -119,11 +152,19 @@ func NewApplicationContext(appName string, version string, args []string, logger
 	ctx.AuthenticationService, ctx.AuthorizationService = builder.AuthenticationService(ctx), builder.AuthorizationService(ctx) //nolint:staticcheck
 	ctx.AuthenticationEndpoint, ctx.AuthorizationFilter = builder.AuthenticationEndpoint(ctx), builder.AuthorizationFilter(ctx) //nolint:staticcheck
 
-	feather_commons_log.Info("starting up - setting up http server")
-	ctx.PublicRouter, ctx.PrivateRouter = builder.HttpServer(ctx) //nolint:staticcheck
+	if ctx.Enablers.HttpServerEnabled {
+		feather_commons_log.Info("starting up - setting up http server")
+		ctx.PublicRouter, ctx.PrivateRouter = builder.HttpServer(ctx) //nolint:staticcheck
+	} else {
+		feather_commons_log.Warn("starting up - warning setting up http configuration. http server is disabled")
+	}
 
-	feather_commons_log.Info("starting up - setting up grpc server")
-	ctx.GrpcServiceDesc, ctx.GrpcServiceServer = builder.GrpcServer(ctx) //nolint:staticcheck
+	if ctx.Enablers.GrpcServerEnabled {
+		feather_commons_log.Info("starting up - setting up grpc server")
+		ctx.GrpcServiceDesc, ctx.GrpcServiceServer = builder.GrpcServer(ctx) //nolint:staticcheck
+	} else {
+		feather_commons_log.Warn("starting up - warning setting up grpc configuration. grpc server is disabled")
+	}
 
 	return ctx
 }
