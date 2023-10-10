@@ -1,8 +1,10 @@
 package boot
 
 import (
+	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"syscall"
 
 	feather_commons_log "github.com/guidomantilla/go-feather-commons/pkg/log"
@@ -69,5 +71,6 @@ func Init(appName string, version string, args []string, logger feather_commons_
 		app.Attach("GrpcServer", feather_web_server.BuildGrpcServer(net.JoinHostPort(*ctx.GrpcConfig.Host, *ctx.GrpcConfig.Port), server))
 	}
 
+	feather_commons_log.Info(fmt.Sprintf("Application %s started", strings.Join([]string{appName, version}, " - ")))
 	return app.Run()
 }

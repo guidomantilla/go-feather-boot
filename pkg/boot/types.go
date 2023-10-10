@@ -3,8 +3,6 @@ package boot
 import (
 	"database/sql"
 	"fmt"
-	"strings"
-
 	"github.com/gin-gonic/gin"
 	feather_commons_environment "github.com/guidomantilla/go-feather-commons/pkg/environment"
 	feather_commons_log "github.com/guidomantilla/go-feather-commons/pkg/log"
@@ -13,6 +11,7 @@ import (
 	feather_sql_datasource "github.com/guidomantilla/go-feather-sql/pkg/datasource"
 	feather_sql "github.com/guidomantilla/go-feather-sql/pkg/sql"
 	"google.golang.org/grpc"
+	"strings"
 )
 
 type Enablers struct {
@@ -91,8 +90,6 @@ func NewApplicationContext(appName string, version string, args []string, logger
 		feather_commons_log.Fatal("starting up - error setting up the ApplicationContext: version is empty")
 	}
 
-	feather_commons_log.Info(fmt.Sprintf("starting up - starting up ApplicationContext %s", strings.Join([]string{appName, version}, " - ")))
-
 	if args == nil {
 		feather_commons_log.Fatal("starting up - error setting up the ApplicationContext: args is nil")
 	}
@@ -129,14 +126,14 @@ func NewApplicationContext(appName string, version string, args []string, logger
 		},
 	}
 
-	feather_commons_log.Info("starting up - setting up environment variables")
+	feather_commons_log.Debug("starting up - setting up environment variables")
 	ctx.Environment = builder.Environment(ctx) //nolint:staticcheck
 
-	feather_commons_log.Info("starting up - setting up configuration")
+	feather_commons_log.Debug("starting up - setting up configuration")
 	builder.Config(ctx) //nolint:staticcheck
 
 	if ctx.Enablers.DatabaseEnabled {
-		feather_commons_log.Info("starting up - setting up DB connection")
+		feather_commons_log.Debug("starting up - setting up db connectivity")
 		ctx.DatasourceContext = builder.DatasourceContext(ctx)   //nolint:staticcheck
 		ctx.Datasource = builder.Datasource(ctx)                 //nolint:staticcheck
 		ctx.TransactionHandler = builder.TransactionHandler(ctx) //nolint:staticcheck
@@ -144,7 +141,7 @@ func NewApplicationContext(appName string, version string, args []string, logger
 		feather_commons_log.Warn("starting up - warning setting up database configuration. database connectivity is disabled")
 	}
 
-	feather_commons_log.Info("starting up - setting up security")
+	feather_commons_log.Debug("starting up - setting up security")
 	ctx.PasswordEncoder = builder.PasswordEncoder(ctx)                                                                          //nolint:staticcheck
 	ctx.PasswordGenerator = builder.PasswordGenerator(ctx)                                                                      //nolint:staticcheck
 	ctx.PasswordManager = builder.PasswordManager(ctx)                                                                          //nolint:staticcheck
@@ -153,14 +150,14 @@ func NewApplicationContext(appName string, version string, args []string, logger
 	ctx.AuthenticationEndpoint, ctx.AuthorizationFilter = builder.AuthenticationEndpoint(ctx), builder.AuthorizationFilter(ctx) //nolint:staticcheck
 
 	if ctx.Enablers.HttpServerEnabled {
-		feather_commons_log.Info("starting up - setting up http server")
+		feather_commons_log.Debug("starting up - setting up http server")
 		ctx.PublicRouter, ctx.PrivateRouter = builder.HttpServer(ctx) //nolint:staticcheck
 	} else {
 		feather_commons_log.Warn("starting up - warning setting up http configuration. http server is disabled")
 	}
 
 	if ctx.Enablers.GrpcServerEnabled {
-		feather_commons_log.Info("starting up - setting up grpc server")
+		feather_commons_log.Debug("starting up - setting up grpc server")
 		ctx.GrpcServiceDesc, ctx.GrpcServiceServer = builder.GrpcServer(ctx) //nolint:staticcheck
 	} else {
 		feather_commons_log.Warn("starting up - warning setting up grpc configuration. grpc server is disabled")
@@ -176,7 +173,7 @@ func (ctx *ApplicationContext) Stop() {
 	if ctx.Datasource != nil && ctx.DatasourceContext != nil {
 
 		var database *sql.DB
-		feather_commons_log.Info("shutting down - closing up db connection")
+		feather_commons_log.Debug("shutting down - closing up db connection")
 
 		if database, err = ctx.Datasource.GetDatabase(); err != nil {
 			feather_commons_log.Error(fmt.Sprintf("shutting down - error db connection: %s", err.Error()))
@@ -188,8 +185,8 @@ func (ctx *ApplicationContext) Stop() {
 			return
 		}
 
-		feather_commons_log.Info("shutting down - db connection closed")
+		feather_commons_log.Debug("shutting down - db connection closed")
 	}
 
-	feather_commons_log.Info(fmt.Sprintf("shutting down - ApplicationContext closed %s", ctx.AppName))
+	feather_commons_log.Info(fmt.Sprintf("Application %s stopped", strings.Join([]string{ctx.AppName, ctx.AppVersion}, " - ")))
 }
