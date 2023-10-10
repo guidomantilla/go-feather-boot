@@ -84,13 +84,22 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			feather_commons_log.Fatal("starting up - error setting up configuration.", "message", "config function not implemented")
 		},
 		DatasourceContext: func(appCtx *ApplicationContext) feather_sql_datasource.DatasourceContext {
+			if appCtx.DatabaseConfig == nil {
+				return nil
+			}
 			return feather_sql_datasource.NewDefaultDatasourceContext(appCtx.DatabaseConfig.Driver, appCtx.DatabaseConfig.ParamHolder, *appCtx.DatabaseConfig.DatasourceUrl,
 				*appCtx.DatabaseConfig.DatasourceUsername, *appCtx.DatabaseConfig.DatasourcePassword, *appCtx.DatabaseConfig.DatasourceServer, *appCtx.DatabaseConfig.DatasourceService)
 		},
 		Datasource: func(appCtx *ApplicationContext) feather_sql_datasource.Datasource {
+			if appCtx.DatabaseConfig == nil {
+				return nil
+			}
 			return feather_sql_datasource.NewDefaultDatasource(appCtx.DatasourceContext, sql.Open)
 		},
 		TransactionHandler: func(appCtx *ApplicationContext) feather_sql_datasource.TransactionHandler {
+			if appCtx.DatabaseConfig == nil {
+				return nil
+			}
 			return feather_sql_datasource.NewTransactionHandler(appCtx.Datasource)
 		},
 		PasswordEncoder: func(appCtx *ApplicationContext) feather_security.PasswordEncoder {
@@ -122,8 +131,8 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 		},
 		HttpServer: func(appCtx *ApplicationContext) (*gin.Engine, *gin.RouterGroup) {
 
-			loggerFilter := sloggin.New(appCtx.Logger.RetrieveLogger().(*slog.Logger).WithGroup("http"))
 			recoveryFilter := gin.Recovery()
+			loggerFilter := sloggin.New(appCtx.Logger.RetrieveLogger().(*slog.Logger).WithGroup("http"))
 			applicationNameFilter := func(ctx *gin.Context) {
 				feather_security.AddApplicationToContext(ctx, appCtx.AppName)
 				ctx.Next()
