@@ -3,6 +3,8 @@ package boot
 import (
 	"database/sql"
 	"fmt"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	feather_commons_environment "github.com/guidomantilla/go-feather-commons/pkg/environment"
 	feather_commons_log "github.com/guidomantilla/go-feather-commons/pkg/log"
@@ -11,7 +13,6 @@ import (
 	feather_sql_datasource "github.com/guidomantilla/go-feather-sql/pkg/datasource"
 	feather_sql "github.com/guidomantilla/go-feather-sql/pkg/sql"
 	"google.golang.org/grpc"
-	"strings"
 )
 
 type Enablers struct {

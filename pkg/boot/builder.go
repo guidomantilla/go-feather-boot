@@ -71,7 +71,7 @@ type BeanBuilder struct {
 func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 
 	if ctx == nil {
-		feather_commons_log.Fatal("starting up - error setting up builder.", "message", "context is nil")
+		feather_commons_log.Fatal("starting up - error setting up builder: context is nil")
 	}
 
 	return &BeanBuilder{
@@ -81,12 +81,12 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			return feather_commons_environment.NewDefaultEnvironment(feather_commons_environment.WithArrays(osArgs, appCtx.CmdArgs))
 		},
 		Config: func(appCtx *ApplicationContext) {
-			feather_commons_log.Warn("starting up - warning setting up configuration.", "message", "config function not implemented")
+			feather_commons_log.Warn("starting up - warning setting up configuration: config function not implemented")
 		},
 		DatasourceContext: func(appCtx *ApplicationContext) feather_sql_datasource.DatasourceContext {
 			if appCtx.Enablers.DatabaseEnabled {
 				if appCtx.DatabaseConfig == nil {
-					feather_commons_log.Fatal("starting up - error setting up configuration.", "message", "database config is nil")
+					feather_commons_log.Fatal("starting up - error setting up configuration: database config is nil")
 					return nil
 				}
 				return feather_sql_datasource.NewDefaultDatasourceContext(appCtx.DatabaseConfig.Driver, appCtx.DatabaseConfig.ParamHolder, *appCtx.DatabaseConfig.DatasourceUrl,
@@ -97,7 +97,7 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 		Datasource: func(appCtx *ApplicationContext) feather_sql_datasource.Datasource {
 			if appCtx.Enablers.DatabaseEnabled {
 				if appCtx.DatabaseConfig == nil {
-					feather_commons_log.Fatal("starting up - error setting up configuration.", "message", "database config is nil")
+					feather_commons_log.Fatal("starting up - error setting up configuration: database config is nil")
 					return nil
 				}
 				return feather_sql_datasource.NewDefaultDatasource(appCtx.DatasourceContext, sql.Open)
@@ -107,7 +107,7 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 		TransactionHandler: func(appCtx *ApplicationContext) feather_sql_datasource.TransactionHandler {
 			if appCtx.Enablers.DatabaseEnabled {
 				if appCtx.DatabaseConfig == nil {
-					feather_commons_log.Fatal("starting up - error setting up configuration.", "message", "database config is nil")
+					feather_commons_log.Fatal("starting up - error setting up configuration: database config is nil")
 					return nil
 				}
 				return feather_sql_datasource.NewTransactionHandler(appCtx.Datasource)
@@ -164,7 +164,7 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			return engine, engine.Group("/api", appCtx.AuthorizationFilter.Authorize)
 		},
 		GrpcServer: func(appCtx *ApplicationContext) (*grpc.ServiceDesc, any) {
-			feather_commons_log.Fatal("starting up - error setting up grpc configuration.", "message", "grpc server function not implemented")
+			feather_commons_log.Fatal("starting up - error setting up grpc configuration: grpc server function not implemented")
 			return nil, nil
 		},
 	}
