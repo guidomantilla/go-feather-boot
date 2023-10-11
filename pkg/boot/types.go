@@ -35,6 +35,7 @@ type GrpcConfig struct {
 
 type SecurityConfig struct {
 	TokenSignatureKey       *string
+	TokenVerificationKey    *string
 	PasswordMinSpecialChars *string
 	PasswordMinNumber       *string
 	PasswordMinUpperCase    *string
@@ -115,7 +116,8 @@ func NewApplicationContext(appName string, version string, args []string, logger
 		Logger:     logger,
 		Enablers:   enablers,
 		SecurityConfig: &SecurityConfig{
-			TokenSignatureKey: feather_commons_util.ValueToPtr("SecretYouShouldHide"),
+			TokenSignatureKey:    feather_commons_util.ValueToPtr("SecretYouShouldHide"),
+			TokenVerificationKey: feather_commons_util.ValueToPtr("SecretYouShouldHide"),
 		},
 		HttpConfig: &HttpConfig{
 			Host: feather_commons_util.ValueToPtr("localhost"),

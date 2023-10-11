@@ -127,7 +127,9 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			return feather_security.NewInMemoryPrincipalManager(appCtx.PasswordManager)
 		},
 		TokenManager: func(appCtx *ApplicationContext) feather_security.TokenManager {
-			return feather_security.NewJwtTokenManager([]byte(*appCtx.SecurityConfig.TokenSignatureKey), feather_security.WithIssuer(appCtx.AppName))
+			return feather_security.NewJwtTokenManager(feather_security.WithIssuer(appCtx.AppName),
+				feather_security.WithSigningKey([]byte(*appCtx.SecurityConfig.TokenSignatureKey)),
+				feather_security.WithVerifyingKey([]byte(*appCtx.SecurityConfig.TokenVerificationKey)))
 		},
 		AuthenticationService: func(appCtx *ApplicationContext) feather_security.AuthenticationService {
 			return feather_security.NewDefaultAuthenticationService(appCtx.PasswordManager, appCtx.PrincipalManager, appCtx.TokenManager)
@@ -145,13 +147,13 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			if appCtx.Enablers.HttpServerEnabled {
 				recoveryFilter := gin.Recovery()
 				loggerFilter := sloggin.New(appCtx.Logger.RetrieveLogger().(*slog.Logger).WithGroup("http"))
-				applicationNameFilter := func(ctx *gin.Context) {
+				customFilter := func(ctx *gin.Context) {
 					feather_security.AddApplicationToContext(ctx, appCtx.AppName)
 					ctx.Next()
 				}
 
 				engine := gin.New()
-				engine.Use(loggerFilter, recoveryFilter, applicationNameFilter)
+				engine.Use(loggerFilter, recoveryFilter, customFilter)
 				engine.POST("/login", appCtx.AuthenticationEndpoint.Authenticate)
 				engine.GET("/health", func(ctx *gin.Context) {
 					ctx.JSON(http.StatusOK, gin.H{"status": "alive"})

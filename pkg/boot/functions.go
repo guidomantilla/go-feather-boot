@@ -56,7 +56,7 @@ func Init(appName string, version string, args []string, logger feather_commons_
 	}
 
 	if ctx.Enablers.HttpServerEnabled {
-		if ctx.PublicRouter != nil || ctx.HttpConfig != nil || ctx.HttpConfig.Host != nil || ctx.HttpConfig.Port != nil {
+		if ctx.PublicRouter == nil || ctx.HttpConfig == nil || ctx.HttpConfig.Host == nil || ctx.HttpConfig.Port == nil {
 			feather_commons_log.Fatal("starting up - error setting up the application: http server is enabled but no public router or http config is provided")
 		}
 		httpServer := &http.Server{
@@ -68,7 +68,7 @@ func Init(appName string, version string, args []string, logger feather_commons_
 	}
 
 	if ctx.Enablers.GrpcServerEnabled {
-		if ctx.GrpcServiceDesc != nil || ctx.GrpcServiceServer != nil || ctx.GrpcConfig != nil || ctx.GrpcConfig.Host != nil || ctx.GrpcConfig.Port != nil {
+		if ctx.GrpcServiceDesc == nil || ctx.GrpcServiceServer == nil || ctx.GrpcConfig == nil || ctx.GrpcConfig.Host == nil || ctx.GrpcConfig.Port == nil {
 			feather_commons_log.Fatal("starting up - error setting up the application: grpc server is enabled but no grpc service descriptor, grpc service server or grpc config is provided")
 		}
 		server := grpc.NewServer()
