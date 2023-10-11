@@ -142,29 +142,35 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 			return feather_security.NewDefaultAuthorizationFilter(appCtx.AuthorizationService)
 		},
 		HttpServer: func(appCtx *ApplicationContext) (*gin.Engine, *gin.RouterGroup) {
-			recoveryFilter := gin.Recovery()
-			loggerFilter := sloggin.New(appCtx.Logger.RetrieveLogger().(*slog.Logger).WithGroup("http"))
-			applicationNameFilter := func(ctx *gin.Context) {
-				feather_security.AddApplicationToContext(ctx, appCtx.AppName)
-				ctx.Next()
-			}
+			if appCtx.Enablers.HttpServerEnabled {
+				recoveryFilter := gin.Recovery()
+				loggerFilter := sloggin.New(appCtx.Logger.RetrieveLogger().(*slog.Logger).WithGroup("http"))
+				applicationNameFilter := func(ctx *gin.Context) {
+					feather_security.AddApplicationToContext(ctx, appCtx.AppName)
+					ctx.Next()
+				}
 
-			engine := gin.New()
-			engine.Use(loggerFilter, recoveryFilter, applicationNameFilter)
-			engine.POST("/login", appCtx.AuthenticationEndpoint.Authenticate)
-			engine.GET("/health", func(ctx *gin.Context) {
-				ctx.JSON(http.StatusOK, gin.H{"status": "alive"})
-			})
-			engine.NoRoute(func(c *gin.Context) {
-				c.JSON(http.StatusNotFound, feather_web_rest.NotFoundException("resource not found"))
-			})
-			engine.GET("/info", func(ctx *gin.Context) {
-				ctx.JSON(http.StatusOK, gin.H{"appName": appCtx.AppName})
-			})
-			return engine, engine.Group("/api", appCtx.AuthorizationFilter.Authorize)
+				engine := gin.New()
+				engine.Use(loggerFilter, recoveryFilter, applicationNameFilter)
+				engine.POST("/login", appCtx.AuthenticationEndpoint.Authenticate)
+				engine.GET("/health", func(ctx *gin.Context) {
+					ctx.JSON(http.StatusOK, gin.H{"status": "alive"})
+				})
+				engine.NoRoute(func(c *gin.Context) {
+					c.JSON(http.StatusNotFound, feather_web_rest.NotFoundException("resource not found"))
+				})
+				engine.GET("/info", func(ctx *gin.Context) {
+					ctx.JSON(http.StatusOK, gin.H{"appName": appCtx.AppName})
+				})
+				return engine, engine.Group("/api", appCtx.AuthorizationFilter.Authorize)
+			}
+			return nil, nil
 		},
 		GrpcServer: func(appCtx *ApplicationContext) (*grpc.ServiceDesc, any) {
-			feather_commons_log.Fatal("starting up - error setting up grpc configuration: grpc server function not implemented")
+			if appCtx.Enablers.GrpcServerEnabled {
+				feather_commons_log.Fatal("starting up - error setting up grpc configuration: grpc server function not implemented")
+				return nil, nil
+			}
 			return nil, nil
 		},
 	}

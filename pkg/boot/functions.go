@@ -52,7 +52,7 @@ func Init(appName string, version string, args []string, logger feather_commons_
 	defer ctx.Stop()
 
 	if err := fn(*ctx); err != nil {
-		feather_commons_log.Fatal("starting up - error setting up the application.", "message", err.Error())
+		feather_commons_log.Fatal(fmt.Sprintf("starting up - error setting up the application: %s", err.Error()))
 	}
 
 	if ctx.Enablers.HttpServerEnabled {
