@@ -110,7 +110,7 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 					feather_commons_log.Fatal("starting up - error setting up configuration: database config is nil")
 					return nil
 				}
-				return feather_sql_datasource.NewTransactionHandler(appCtx.Datasource)
+				return feather_sql_datasource.NewTransactionHandler(appCtx.DatasourceContext, appCtx.Datasource)
 			}
 			return nil
 		},
