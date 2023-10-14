@@ -1,7 +1,6 @@
 package boot
 
 import (
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -12,6 +11,7 @@ import (
 	feather_security "github.com/guidomantilla/go-feather-security/pkg/security"
 	feather_sql_datasource "github.com/guidomantilla/go-feather-sql/pkg/datasource"
 	feather_sql "github.com/guidomantilla/go-feather-sql/pkg/sql"
+	"github.com/jmoiron/sqlx"
 	"google.golang.org/grpc"
 )
 
@@ -175,7 +175,7 @@ func (ctx *ApplicationContext) Stop() {
 
 	if ctx.Datasource != nil && ctx.DatasourceContext != nil {
 
-		var database *sql.DB
+		var database *sqlx.DB
 		feather_commons_log.Debug("shutting down - closing up db connection")
 
 		if database, err = ctx.Datasource.GetDatabase(); err != nil {

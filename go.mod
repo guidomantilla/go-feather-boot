@@ -9,6 +9,7 @@ require (
 	github.com/guidomantilla/go-feather-security v0.5.1
 	github.com/guidomantilla/go-feather-sql v0.5.1
 	github.com/guidomantilla/go-feather-web v0.5.1
+	github.com/jmoiron/sqlx v1.3.5
 	github.com/qmdx00/lifecycle v1.1.1
 	github.com/samber/slog-gin v1.1.0
 	google.golang.org/grpc v1.58.2

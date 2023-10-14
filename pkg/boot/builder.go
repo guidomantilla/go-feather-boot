@@ -2,7 +2,6 @@ package boot
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,6 +12,7 @@ import (
 	feather_security "github.com/guidomantilla/go-feather-security/pkg/security"
 	feather_sql_datasource "github.com/guidomantilla/go-feather-sql/pkg/datasource"
 	feather_web_rest "github.com/guidomantilla/go-feather-web/pkg/rest"
+	"github.com/jmoiron/sqlx"
 	sloggin "github.com/samber/slog-gin"
 	"google.golang.org/grpc"
 )
@@ -100,7 +100,7 @@ func NewBeanBuilder(ctx context.Context) *BeanBuilder {
 					feather_commons_log.Fatal("starting up - error setting up configuration: database config is nil")
 					return nil
 				}
-				return feather_sql_datasource.NewDefaultDatasource(appCtx.DatasourceContext, sql.Open)
+				return feather_sql_datasource.NewDefaultDatasource(appCtx.DatasourceContext, sqlx.Open)
 			}
 			return nil
 		},
